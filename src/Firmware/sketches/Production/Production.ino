@@ -6,10 +6,14 @@
 #include "config.h"
 
 #define FIRMWARE_VERSION  "1.0.0"
+#define DHT_TYPE           DHT11
 
 WiFiClientSecure secureWifiClient = WiFiClientSecure();
 PubSubClient mqttClient = PubSubClient(secureWifiClient, MQTT_SERVER_TLS_FINGERPRINT);
 const int BUFFER_SIZE = JSON_OBJECT_SIZE(20);
+DHT dhtSensor = DHT(PIN_DHT11, DHT_TYPE);
+
+unsigned long lastPublishUpdate = 0;
 
 /*
  * Setup
@@ -17,13 +21,15 @@ const int BUFFER_SIZE = JSON_OBJECT_SIZE(20);
 
 void setup()
 {
-    Serial.begin(115200);
-    delay(250);
+    #if DEEPSLEEP_ENABLED == false
+        Serial.begin(115200);
+        delay(250);
 
-    char buffer[64] = {0};
-    sprintf(buffer, "setup(): The node '%s' was powered up.", MQTT_CLIENTID);
-    Serial.println();
-    Serial.println(buffer);
+        char buffer[64] = {0};
+        sprintf(buffer, "setup(): The node '%s' was powered up.", MQTT_CLIENTID);
+        Serial.println();
+        Serial.println(buffer);
+    #endif
 
     #ifdef PIN_STATUSLED
         pinMode(PIN_STATUSLED, OUTPUT);
@@ -32,6 +38,13 @@ void setup()
     setupWifi();
     setupSensor();
     setupMQTT();
+
+    // If deep sleep is enabled, the loop() will never reached, thus do everything here
+    #if DEEPSLEEP_ENABLED == true
+        connectMQTT();
+        readValuesAndPublishState();
+        startDeepSleep();
+    #endif
 }
 
 void setupWifi()
@@ -77,7 +90,8 @@ void blinkStatusLED(const int times)
 
 void setupSensor()
 {
-    Serial.println("setupSensor(): Setup DHT11...");
+    Serial.println("setupSensor(): Setup DHT sensor...");
+    dhtSensor.begin();
 }
 
 void setupMQTT()
@@ -85,36 +99,16 @@ void setupMQTT()
     mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
 }
 
-void publishState()
-{
-    StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
-    JsonObject& root = jsonBuffer.createObject();
-
-    // root["state"] = (stateOnOff == true) ? "ON" : "OFF";
-
-    // JsonObject& color = root.createNestedObject("color");
-    // color["r"] = originalRedValue;
-    // color["g"] = originalGreenValue;
-    // color["b"] = originalBlueValue;
-
-    // if (LED_TYPE == RGBW)
-    // {
-    //     root["white_value"] = originalWhiteValue;
-    // }
-
-    // root["brightness"] = brightness;
-
-    // char payloadMessage[root.measureLength() + 1];
-    // root.printTo(payloadMessage, sizeof(payloadMessage));
-
-    // Serial.printf("publishState(): Publish message on channel '%s': %s\n", MQTT_CHANNEL_STATE, payloadMessage);
-    // mqttClient.publish(MQTT_CHANNEL_STATE, payloadMessage, true);
-}
-
 void loop()
 {
     connectMQTT();
     mqttClient.loop();
+
+    if ((micros() - lastPublishUpdate) > (PUBLISH_INTERVAL * 1000000))
+    {
+        readValuesAndPublishState();
+        lastPublishUpdate = micros();
+    }
 }
 
 void connectMQTT()
@@ -133,12 +127,6 @@ void connectMQTT()
         if (mqttClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_PASSWORD) == true)
         {
             Serial.println("connectMQTT(): Connected to MQTT broker.");
-
-            // (Re)subscribe on topics
-            mqttClient.subscribe(MQTT_CHANNEL_COMMAND);
-
-            // Initially publish current state
-            publishState();
         }
         else
         {
@@ -146,5 +134,64 @@ void connectMQTT()
             blinkStatusLED(3);
             delay(500);
         }
+    }
+}
+
+void readValuesAndPublishState()
+{
+    const float humidityValue = dhtSensor.readHumidity();
+    const float temperatureValue = dhtSensor.readTemperature();
+
+    if (isnan(humidityValue) || isnan(temperatureValue))
+    {
+        Serial.println("readValuesAndPublishState(): The humidity and temperature values could not be read!");
+    }
+    else
+    {
+        #if DEBUG_LEVEL >= 1
+            Serial.println("readValuesAndPublishState(): The humidity and temperature values was read successfully.");
+            Serial.print(F("readValuesAndPublishState():"));
+            Serial.print(F(" humidityValue = "));
+            Serial.print(humidityValue);
+            Serial.print(F(", temperatureValue = "));
+            Serial.print(temperatureValue);
+            Serial.println();
+        #endif
+
+        StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+        JsonObject& root = jsonBuffer.createObject();
+
+        // String cast seems needed
+        root["humidity"] = (String) humidityValue;
+        root["temperature"] = (String) temperatureValue;
+
+        char payloadMessage[root.measureLength() + 1];
+        root.printTo(payloadMessage, sizeof(payloadMessage));
+
+        #if DEBUG_LEVEL >= 1
+            Serial.printf("readValuesAndPublishState(): Publish message on channel '%s': %s\n", MQTT_CHANNEL_STATE, payloadMessage);
+        #endif
+
+        mqttClient.publish(MQTT_CHANNEL_STATE, payloadMessage, true);
+    }
+}
+
+void startDeepSleep()
+{
+    Serial.println("startDeepSleep(): Disconnecting MQTT connection...");
+    mqttClient.disconnect();
+
+    Serial.println("startDeepSleep(): Disconnecting Wifi connection...");
+    WiFi.disconnect();
+
+    Serial.println("startDeepSleep(): Shutting down. Going to deep sleep...");
+    ESP.deepSleep(PUBLISH_INTERVAL * 1000000, WAKE_RF_DEFAULT);
+
+    Serial.println("startDeepSleep(): Deep sleep failed!");
+
+    while(true)
+    {
+        blinkStatusLED(5);
+        delay(5000);
     }
 }

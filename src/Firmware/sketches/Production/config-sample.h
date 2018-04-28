@@ -22,7 +22,9 @@
 #define MQTT_PASSWORD                  ""
 
 #define MQTT_CHANNEL_STATE             "/sensor/api/1/id/AAAABBBB/state/"
-#define MQTT_CHANNEL_COMMAND           "/sensor/api/1/id/AAAABBBB/command/"
+
+#define DEEPSLEEP_ENABLED              true
+#define PUBLISH_INTERVAL               60
 
 // Uncomment if on the board is an onboard LED
 #define PIN_STATUSLED                  LED_BUILTIN
