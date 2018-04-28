@@ -2,6 +2,10 @@
  * Configuration
  */
 
+// If you enable deepsleep, you need to connect RST pin to GPIO16/D1, otherwise diconnect
+#define DEEPSLEEP_ENABLED              true
+
+// Important: If you enabled deepsleep, the serial output won't work
 #define DEBUG_LEVEL                    1
 
 // Generate a random id with:
@@ -23,10 +27,14 @@
 
 #define MQTT_CHANNEL_STATE             "/sensor/api/1/id/AAAABBBB/state/"
 
-#define DEEPSLEEP_ENABLED              true
-#define PUBLISH_INTERVAL               60
+// Publish interval in seconds
+#define PUBLISH_INTERVAL               30
+
+#define OFFSET_TEMPERATURE             0
+#define OFFSET_HUMIDITY                0
 
 // Uncomment if on the board is an onboard LED
+// Important: If you enabled deepsleep, the LED_BUILTIN on the NodeMCU won't work
 #define PIN_STATUSLED                  LED_BUILTIN
 
 #define PIN_DHT11                      D3
