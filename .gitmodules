@@ -1,0 +1,16 @@
+[submodule "src/Firmware/libraries/ArduinoJson"]
+	path = src/Firmware/libraries/ArduinoJson
+	url = https://github.com/bastianraschke/ArduinoJson.git
+	branch = master
+[submodule "src/Firmware/libraries/PubSubClient"]
+	path = src/Firmware/libraries/PubSubClient
+	url = https://github.com/bastianraschke/pubsubclient.git
+	branch = Feature/Added-TLS-Support
+[submodule "src/Firmware/libraries/DHT"]
+	path = src/Firmware/libraries/DHT
+	url = https://github.com/bastianraschke/DHT-sensor-library.git
+	branch = master
+[submodule "src/Firmware/libraries/Adafruit_Sensor"]
+	path = src/Firmware/libraries/Adafruit_Sensor
+	url = https://github.com/bastianraschke/Adafruit_Sensor.git
+	branch = master
