@@ -4,10 +4,13 @@
  * Configuration
  */
 
-// If you enable deepsleep, you need to connect RST pin to GPIO16/D1, otherwise diconnect
-#define DEEPSLEEP_ENABLED              true
+/*
+ * If you want to enable deepsleep, you need to:
+ * - connect RST pin to GPIO16/D1, otherwise diconnect
+ * - set DEBUG_LEVEL to 0, otherwise the device keeps resetting
+ */
+#define DEEPSLEEP_ENABLED              false
 
-// Important: If you enabled deepsleep, the serial output won't work
 #define DEBUG_LEVEL                    1
 
 // Generate a random id with:
@@ -38,7 +41,7 @@
 #define OFFSET_TEMPERATURE             0
 #define OFFSET_HUMIDITY                0
 
-// Uncomment if on the board is an onboard LED
+// Set indication LED to a value >= 0 to enable it
 // Important: If you enabled deepsleep, the LED_BUILTIN on the NodeMCU won't work
 #define PIN_STATUSLED                  LED_BUILTIN
 

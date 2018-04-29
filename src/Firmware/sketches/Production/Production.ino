@@ -20,7 +20,7 @@ unsigned long lastPublishUpdate = 0;
 
 void setup()
 {
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.begin(115200);
         delay(250);
 
@@ -42,13 +42,17 @@ void setup()
     #if DEEPSLEEP_ENABLED == true
         connectMQTT();
         readValuesAndPublishState();
+
+        // At least one MQTT client loop is needed to publish message(s)
+        mqttClient.loop();
+
         startDeepSleep();
     #endif
 }
 
 void setupWifi()
 {
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.printf("setupWifi(): Connecting to to Wi-Fi access point '%s'...\n", WIFI_SSID);
     #endif
 
@@ -67,12 +71,12 @@ void setupWifi()
 
         delay(500);
 
-        #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+        #if DEBUG_LEVEL >= 1
             Serial.println(F("setupWifi(): Connecting..."));
         #endif
     }
 
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.print(F("setupWifi(): Connected to Wi-Fi access point. Obtained IP address: "));
         Serial.println(WiFi.localIP());
     #endif
@@ -96,7 +100,7 @@ void blinkStatusLED(const int times)
 
 void setupSensor()
 {
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.println("setupSensor(): Setup DHT sensor...");
     #endif
 
@@ -111,13 +115,14 @@ void setupMQTT()
 void loop()
 {
     connectMQTT();
-    mqttClient.loop();
 
     if ((micros() - lastPublishUpdate) > (PUBLISH_INTERVAL * 1000000))
     {
         readValuesAndPublishState();
         lastPublishUpdate = micros();
     }
+
+    mqttClient.loop();
 }
 
 void connectMQTT()
@@ -127,25 +132,25 @@ void connectMQTT()
         return ;
     }
 
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.printf("connectMQTT(): Connecting to MQTT broker '%s:%i'...\n", MQTT_SERVER, MQTT_PORT);
     #endif
 
     while (mqttClient.connected() == false)
     {
-        #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+        #if DEBUG_LEVEL >= 1
             Serial.println("connectMQTT(): Connecting...");
         #endif
 
         if (mqttClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_PASSWORD) == true)
         {
-            #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+            #if DEBUG_LEVEL >= 1
                 Serial.println("connectMQTT(): Connected to MQTT broker.");
             #endif
         }
         else
         {
-            #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+            #if DEBUG_LEVEL >= 1
                 Serial.printf("connectMQTT(): Connection failed with error code %i. Try again...\n", mqttClient.state());
             #endif
 
@@ -162,7 +167,7 @@ void readValuesAndPublishState()
 
     if (isnan(humidityValue) || isnan(temperatureValue))
     {
-        #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+        #if DEBUG_LEVEL >= 1
             Serial.println("readValuesAndPublishState(): The humidity and temperature values could not be read!");
         #endif
 
@@ -172,7 +177,7 @@ void readValuesAndPublishState()
     {
         blinkStatusLED(1);
 
-        #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+        #if DEBUG_LEVEL >= 1
             Serial.println("readValuesAndPublishState(): The humidity and temperature values was read successfully.");
             Serial.print(F("readValuesAndPublishState():"));
             Serial.print(F(" humidityValue = "));
@@ -192,7 +197,7 @@ void readValuesAndPublishState()
         char payloadMessage[root.measureLength() + 1];
         root.printTo(payloadMessage, sizeof(payloadMessage));
 
-        #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+        #if DEBUG_LEVEL >= 1
             Serial.printf("readValuesAndPublishState(): Publish message on channel '%s': %s\n", MQTT_CHANNEL_STATE, payloadMessage);
         #endif
 
@@ -202,25 +207,25 @@ void readValuesAndPublishState()
 
 void startDeepSleep()
 {
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.println("startDeepSleep(): Disconnecting MQTT connection...");
     #endif
 
     mqttClient.disconnect();
 
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.println("startDeepSleep(): Disconnecting Wifi connection...");
     #endif
 
     WiFi.disconnect();
 
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.println("startDeepSleep(): Shutting down. Going to deep sleep...");
     #endif
 
     ESP.deepSleep(PUBLISH_INTERVAL * 1000000, WAKE_RF_DEFAULT);
 
-    #if DEBUG_LEVEL >= 1 && DEEPSLEEP_ENABLED == false
+    #if DEBUG_LEVEL >= 1
         Serial.println("startDeepSleep(): Deep sleep failed!");
     #endif
 
