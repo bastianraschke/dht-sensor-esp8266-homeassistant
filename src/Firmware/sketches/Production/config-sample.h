@@ -1,3 +1,5 @@
+#include <DHT.h>
+
 /*
  * Configuration
  */
@@ -16,6 +18,8 @@
 #define WIFI_PASSWORD                  ""
 
 #define MQTT_CLIENTID                  SENSOR_NODE_ID
+
+// Put the host/IPv4 address of your MQTT broker here
 #define MQTT_SERVER                    ""
 
 // Use the SHA1 fingerprint of the server certificate (NOT the CA certificate) in the following format:
@@ -30,6 +34,7 @@
 // Publish interval in seconds
 #define PUBLISH_INTERVAL               30
 
+// Define some offsets to correct measurements
 #define OFFSET_TEMPERATURE             0
 #define OFFSET_HUMIDITY                0
 
@@ -37,4 +42,5 @@
 // Important: If you enabled deepsleep, the LED_BUILTIN on the NodeMCU won't work
 #define PIN_STATUSLED                  LED_BUILTIN
 
-#define PIN_DHT11                      D3
+#define PIN_DHT_SENSOR                 D3
+#define DHT_SENSOR_TYPE                DHT11

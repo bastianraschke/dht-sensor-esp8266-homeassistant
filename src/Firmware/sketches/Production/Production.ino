@@ -6,12 +6,11 @@
 #include "config.h"
 
 #define FIRMWARE_VERSION  "1.0.0"
-#define DHT_TYPE           DHT11
 
 WiFiClientSecure secureWifiClient = WiFiClientSecure();
 PubSubClient mqttClient = PubSubClient(secureWifiClient, MQTT_SERVER_TLS_FINGERPRINT);
 const int BUFFER_SIZE = JSON_OBJECT_SIZE(20);
-DHT dhtSensor = DHT(PIN_DHT11, DHT_TYPE);
+DHT dhtSensor = DHT(PIN_DHT_SENSOR, DHT_SENSOR_TYPE);
 
 unsigned long lastPublishUpdate = 0;
 
