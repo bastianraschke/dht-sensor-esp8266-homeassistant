@@ -162,21 +162,25 @@ void connectMQTT()
 
 void readValuesAndPublishState()
 {
-    const float humidityValue = dhtSensor.readHumidity() + OFFSET_HUMIDITY;
-    const float temperatureValue = dhtSensor.readTemperature() + OFFSET_TEMPERATURE;
+    float humidityValue = dhtSensor.readHumidity();
+    float temperatureValue = dhtSensor.readTemperature();
 
     if (isnan(humidityValue) || isnan(temperatureValue))
     {
         #if DEBUG_LEVEL >= 1
             Serial.println("readValuesAndPublishState(): The humidity and temperature values could not be read!");
+            Serial.print(F("readValuesAndPublishState():"));
+            Serial.print(F(" humidityValue = "));
+            Serial.print(humidityValue);
+            Serial.print(F(", temperatureValue = "));
+            Serial.print(temperatureValue);
+            Serial.println();
         #endif
 
         blinkStatusLED(4);
     }
     else
     {
-        blinkStatusLED(1);
-
         #if DEBUG_LEVEL >= 1
             Serial.println("readValuesAndPublishState(): The humidity and temperature values was read successfully.");
             Serial.print(F("readValuesAndPublishState():"));
@@ -186,6 +190,12 @@ void readValuesAndPublishState()
             Serial.print(temperatureValue);
             Serial.println();
         #endif
+
+        blinkStatusLED(1);
+
+        // Apply offset after reading
+        humidityValue += OFFSET_HUMIDITY;
+        temperatureValue += OFFSET_TEMPERATURE;
 
         StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
